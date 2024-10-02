@@ -6,7 +6,7 @@ to improve the performance.
 Version1 average performance: 0.26 seconds per evaluation
 Version2 average performance: 0.01 seconds per evaluation
 """
-
+import os
 import sys
 import itertools
 import time
@@ -261,7 +261,7 @@ def player_hand(community_cards):
     hand = random.sample(remaining_deck, 2)
     return hand
 
-def all_possible_hands(community_cards, number_of_hands=None):
+def all_possible_hands(community_cards, number_of_hands=None, repeated=False):
     """Generate number_of_hands for possible players, by default generate all possible hand 
     combinartions 47!/(2!*45!). Output: list of hands (two cards), where any card in the hand 
     is a 2 caracter string."""
@@ -269,12 +269,21 @@ def all_possible_hands(community_cards, number_of_hands=None):
     deck = create_deck()
     # Remove the cards that are already in the common hand
     remaining_deck = [card for card in deck if card not in community_cards]
-    # Generate all possible 2-card combinations from the remaining deck
-    possible_hands = list(itertools.combinations(remaining_deck, 2))
-    random.shuffle(possible_hands)
+    if repeated:
+        # Generate all possible 2-card combinations from the remaining deck
+        possible_hands = list(itertools.combinations(remaining_deck, 2))
+        random.shuffle(possible_hands)
+        if number_of_hands is None:
+            return possible_hands
+        return possible_hands[:number_of_hands]
+
     if number_of_hands is None:
-        return possible_hands
-    return possible_hands[:number_of_hands]
+        number_of_hands = 9
+    flat_hand_list = random.sample(remaining_deck, number_of_hands*2)
+    possible_hands = []
+    for i in range(number_of_hands):
+        possible_hands.append((flat_hand_list[2*i], flat_hand_list[2*i+1]))
+    return possible_hands
 
 def best_possible_hand(community_cards, number_of_hands=None ):
     """Evaluate the best movement against with community cards for number_of_hands players 
@@ -323,8 +332,9 @@ def data_collection():
     time_format = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"Running {simulations} simulations with {num_of_hands} num_of_hands at {time_format}.")
     print("file_identifier: {file_identifier}.")
+    file_path = os.getenv("POKER_OUT_FILE_PATH", "")
 
-    file_name = f"poker_monte_carlo_{simulations}_{file_identifier}_{time_format}.csv"
+    file_name = f"{file_path}poker_monte_carlo_{simulations}_{file_identifier}_{time_format}.csv"
     print("file_name:", file_name)
     with open(file_name, "w", encoding="utf-8") as file:
         sys.stdout = file
@@ -334,7 +344,25 @@ def data_collection():
 
 ###Testing###
 
-def methods_comparizon(number_of_siluations=100):
+def full_test():
+    """Automated full testing."""
+    tc2_methods_comparizon()
+    tc3_validate_distinct_hands()
+
+def tc3_validate_distinct_hands(number_of_siluations=100):
+    """Evaluate that all hands given by  against evaluate_full_hand. The results should be the same
+    in all cases. No output"""
+    for _ in range(number_of_siluations):
+        community_cards = create_community_cards()
+        possible_hands = all_possible_hands(community_cards, 9)
+        set_cards = set()
+        for hand in possible_hands:
+            set_cards.add(hand[0])
+            set_cards.add(hand[1])
+        print("set_cards:", set_cards)
+        assert len(set_cards) == 18, f"duplicated cards in {possible_hands}"
+
+def tc2_methods_comparizon(number_of_siluations=100):
     """Evaluate best_hand against evaluate_full_hand. The results should be the same
     in all cases. No output"""
     for _ in range(number_of_siluations):
@@ -380,8 +408,5 @@ def tc1_simple_hand_usage():
 
 
 if __name__ == "__main__":
-    #tc1_simple_hand_usage()
-
-    #methods_comparizon(10000)
-
+    #full_test()
     data_collection()
