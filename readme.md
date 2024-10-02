@@ -6,6 +6,9 @@ This project is meant to undestant probabilities in poker given actual player ha
 
 To use this software python 3.11 was used, please check the compatibility of your python version. Use pip to install required packages. 
 
+> Optional. You can set the output path with enviroment variable "POKER_OUT_FILE_PATH". example: 
+> POKER_OUT_FILE_PATH="D:\results_monte_carlo_poker\"
+
 > Run monte_carlo.py to generate simulations.
 
 ```
@@ -32,8 +35,6 @@ Files with be generated as in the included file: "poker_monte_carlo_2_3hands_202
 
 ### Known issues:
 
- - [ ] In "monte_carlo.py", while fetching pairs for all players pairs can repit cards. A validation is required to avoid that.
- - [ ] In "monte_carlo.py", There is not a way to set a path for generated files.
  - [ ] format "data_science.py" acording to pylint
  - [ ] In "data_science.py", probability is not declared properly
  - [ ] In "data_science.py", the file usage is not intuitebly. 
