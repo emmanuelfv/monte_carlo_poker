@@ -35,9 +35,9 @@ Files with be generated as in the included file: "poker_monte_carlo_2_3hands_202
 
 ### Known issues:
 
- - [ ] format "data_science.py" acording to pylint
- - [ ] In "data_science.py", probability is not declared properly
- - [ ] In "data_science.py", the file usage is not intuitebly. 
+ - [x] format "data_science.py" acording to pylint
+ - [x] In "data_science.py", probability is not declared properly
+ - [x] In "data_science.py", the file  usage is not intuitibely. 
  - [ ] In "data_science.py", there is not a way to generate reports of the information. All the information is printed.
 
 ## Contributions 

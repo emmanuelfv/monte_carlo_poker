@@ -3,13 +3,17 @@ data_science.py. script to fetch the data from files and to produce analisys and
 Current activities:
     split winner hands and provide a matris of result with coicidences and probabilities
 """
-
+import argparse
 from collections import Counter
+import os
+
+
 VALUES = "23456789TJQKA"
 INVERSE_VALUES = VALUES[::-1]
 P_CASES = 6
 S_CASES = 4
 N_CASES = 12
+T_HANDS = 1326
 
 def card_rank(card):
     """helper function to rank the cards for sorting purposes"""
@@ -47,10 +51,10 @@ def process_file(file_path):
             result.append(classification)
     return result
 
-def generate_matrices(win_counter):
+def generate_matrices(win_counter, n_players):
     """Function to generate matrices"""
-    o_coincidence_matrix = [[None for _ in range(len(VALUES))] for _ in range(len(VALUES))]
-    o_probability_matrix = [[None for _ in range(len(VALUES))] for _ in range(len(VALUES))]
+    o_coincidence_matrix = [[0 for _ in range(len(VALUES))] for _ in range(len(VALUES))]
+    o_probability_matrix = [[0 for _ in range(len(VALUES))] for _ in range(len(VALUES))]
     num_simulations = sum(item[1] for item in win_counter.most_common(len(win_counter)))
     cases = 1
     for key, value in win_counter.items():
@@ -69,8 +73,9 @@ def generate_matrices(win_counter):
             cases = N_CASES
         row_idx = INVERSE_VALUES.index(row_rank)
         col_idx = INVERSE_VALUES.index(col_rank)
+        value_probability = value*T_HANDS/(n_players*cases*num_simulations)
         o_coincidence_matrix[row_idx][col_idx] = value
-        o_probability_matrix[row_idx][col_idx] = 100*value/(cases*num_simulations)
+        o_probability_matrix[row_idx][col_idx] = value_probability
     return o_coincidence_matrix, o_probability_matrix
 
 def print_matrix(matrix, threshold=0):
@@ -82,7 +87,7 @@ def print_matrix(matrix, threshold=0):
     def get_grayscale(value):
         """get_grayscale function to set colors based on the value."""
 
-        if value is None:
+        if value == 0:
             return "\033[0m"
         normalized = (value - min_val) / (max_val - min_val) if max_val != min_val else 0
         grayscale_level = int(normalized * 255)
@@ -91,7 +96,7 @@ def print_matrix(matrix, threshold=0):
     max_width = 1
     for row in matrix:
         for value in row:
-            if value is not None:
+            if value != 0:
                 value_lenght = len(f'{value}') if isinstance(value, int) else len(f'{value:.4f}')
                 max_width = max(max_width, value_lenght)
 
@@ -103,7 +108,7 @@ def print_matrix(matrix, threshold=0):
             if value < threshold:
                 value = 0
             color_code = get_grayscale(value)
-            if value is None:
+            if value == 0:
                 row.append(f'{"":>{max_width}}')
             elif isinstance(value, int):
                 row.append(f'{color_code}{value:>{max_width}}\033[0m')
@@ -116,8 +121,10 @@ def print_matrix(matrix, threshold=0):
         print(f'{rank}  ' + '  '.join(row))
     print("\n\n")
 
-if __name__ == "__main__":
-    #files created evaluating all the hand combinations
+## lists
+def dummy_list():
+    #TODO: make proper files from here
+    """
     file_list = [
     "poker_monte_carlo_1727515339.1416242.csv",
     "poker_monte_carlo_1727517452.8591456.csv",
@@ -136,24 +143,50 @@ if __name__ == "__main__":
 
     file_list_3_long = [
     "poker_monte_carlo_100000000_3hands_20240928_105040.csv"
-    ]
+    ]"""
+    pass
 
+
+## generators
+def raw_to_matriz_gen(file_list, n_players):
     winner_counter = Counter()
-    for file_name in file_list_3_long:
+    for file_name in file_list:
         winner_counter += Counter(process_file(file_name))
-        print(winner_counter)
         simulations_read = sum(item[1] for item in winner_counter.most_common(len(winner_counter)))
-        print(len(winner_counter), simulations_read)
+    print(winner_counter)
+    print(len(winner_counter), simulations_read)
 
-    coincidence_matrix, probability_matrix = generate_matrices(winner_counter)
+    coincidence_matrix, probability_matrix = generate_matrices(winner_counter, n_players)
     print_matrix(coincidence_matrix)
-    print_matrix(probability_matrix, 0.1)
-    print_matrix(probability_matrix, 0.085)
+    print_matrix(probability_matrix, 0.145)
+    print_matrix(probability_matrix, 0.11)
     print_matrix(probability_matrix, 0.0)
-    #print_matrix_percentage(matrix)
-    #best_values = counter.most_common(int(0.3*169))
-    #counter_top_30 = Counter(dict(best_values))
-    #print(counter_top_30)
-    #coincidence_matrix, probability_matrix = generate_matrices(counter_top_30)
-    #print_matrix(coincidence_matrix)
-    #print_matrix(probability_matrix)
+
+
+
+if __name__ == "__main__":
+    #files created evaluating all the hand combinations
+
+    file_path = os.getenv("POKER_OUT_FILE_PATH", "")
+
+    parser = argparse.ArgumentParser(
+        description='Data Analysis App for Monte Carlo Poker simulations.')
+    parser.add_argument('number_of_players')
+    parser.add_argument('-f', '--file')
+    parser.add_argument('-i', '--ignore_default_path')
+    parser.add_argument('-o', '--output_file') #TODO
+    parser.add_argument('-l', '--list_file')
+    args = parser.parse_args()
+
+    print(args, args.number_of_players, args.file)
+    n_players = int(args.number_of_players)
+    
+    file_list = [args.file] if args.file is not None else []
+    
+    if args.list_file is not None:
+        with open(args.list_file, 'r', encoding="utf-8") as file:
+            for line in file:
+                file_list.append(line.strip())
+
+    print(file_list)
+    raw_to_matriz_gen(file_list, n_players)
