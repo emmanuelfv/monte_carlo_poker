@@ -17,9 +17,15 @@ Usage:
 python monte_carlo.py <number_of_simulations> <number_of_players>
 ```
 
-Files with be generated as in the included file: "poker_monte_carlo_2_3hands_20241001_162523.csv"
+Simulation files will be generated as in the included file: "poker_monte_carlo_2_3hands_20241001_162523.csv"
 
-> Modify data_science.py to fetch analisys. based on the generated files.
+> Run data_science.py to generate report analisys based on the simulation files.
+
+```
+usage: data_science.py [-h] [-f FILE] [-o OUTPUT_PATH] [-l LIST_FILE] number_of_players
+```
+
+Report files will be generated as in the include file: "reports\PKM_summary_9_20241006_204639.txt"
 
 ## project roadmap
 
@@ -34,12 +40,15 @@ Files with be generated as in the included file: "poker_monte_carlo_2_3hands_202
  - [ ] Implement a way to tract information of the game for further analisys based on all game activities. 
 
 ### Known issues:
+ - [ ]
 
+### Solved issues:
  - [x] format "data_science.py" acording to pylint
  - [x] In "data_science.py", probability is not declared properly
  - [x] In "data_science.py", the file  usage is not intuitibely. 
- - [ ] In "data_science.py", there is not a way to generate reports of the information. All the information is printed.
+ - [x] In "data_science.py", there is not a way to generate reports of the information. All the information is printed.
 
 ## Contributions 
 
 Please feel free to contribute on this project, there is a lot of investigation to do on this field.
+
