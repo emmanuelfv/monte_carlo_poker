@@ -6,7 +6,8 @@ Current activities:
 import argparse
 from collections import Counter
 import os
-
+import sys
+from datetime import datetime
 
 VALUES = "23456789TJQKA"
 INVERSE_VALUES = VALUES[::-1]
@@ -38,12 +39,12 @@ def classify_hand(cards):
 def process_file(file_path):
     """Function to process the file"""
     result = []
-    with open(file_path, 'r', encoding="utf-8") as file:
-        for line in file:
-            line = line.strip()
-            if not line:
+    with open(file_path, 'r', encoding="utf-8") as simulation_file:
+        for sim_line in simulation_file:
+            sim_line = sim_line.strip()
+            if not sim_line:
                 continue
-            fields = line.split('|')
+            fields = sim_line.split('|')
             if fields[1] == "hand":
                 continue
             second_field = fields[1].split(',')
@@ -51,7 +52,7 @@ def process_file(file_path):
             result.append(classification)
     return result
 
-def generate_matrices(win_counter, n_players):
+def generate_matrices(win_counter, total_players):
     """Function to generate matrices"""
     o_coincidence_matrix = [[0 for _ in range(len(VALUES))] for _ in range(len(VALUES))]
     o_probability_matrix = [[0 for _ in range(len(VALUES))] for _ in range(len(VALUES))]
@@ -73,19 +74,18 @@ def generate_matrices(win_counter, n_players):
             cases = N_CASES
         row_idx = INVERSE_VALUES.index(row_rank)
         col_idx = INVERSE_VALUES.index(col_rank)
-        value_probability = value*T_HANDS/(n_players*cases*num_simulations)
+        value_probability = value*T_HANDS/(total_players*cases*num_simulations)
         o_coincidence_matrix[row_idx][col_idx] = value
         o_probability_matrix[row_idx][col_idx] = value_probability
     return o_coincidence_matrix, o_probability_matrix
 
-def print_matrix(matrix, threshold=0):
+def print_matrix(matrix, threshold=0, long_report=False):
     """Function to print matrices. Threshold is used to set values with low posibility to 0."""
-
-    all_values = [value for row in matrix for value in row if value is not None]
-    min_val, max_val = 0, max(all_values)
+    min_val, max_val = 0, max(value for row in matrix for value in row)
 
     def get_grayscale(value):
-        """get_grayscale function to set colors based on the value."""
+        """Helper function for print_matrix.
+        get_grayscale function to set colors based on the value."""
 
         if value == 0:
             return "\033[0m"
@@ -96,97 +96,124 @@ def print_matrix(matrix, threshold=0):
     max_width = 1
     for row in matrix:
         for value in row:
-            if value != 0:
-                value_lenght = len(f'{value}') if isinstance(value, int) else len(f'{value:.4f}')
-                max_width = max(max_width, value_lenght)
+            value_lenght = len(f'{value}') if isinstance(value, int) else len(f'{value:.4f}')
+            max_width = max(max_width, value_lenght)
 
     print('  ' + ' '.join(f'{rank:>{max_width+1}}' for rank in INVERSE_VALUES))
     for i, rank in enumerate(INVERSE_VALUES):
         row = []
-        for j in range(len(INVERSE_VALUES)):
+        for j in range(len(VALUES)):
             value = matrix[i][j]
-            if value < threshold:
-                value = 0
-            color_code = get_grayscale(value)
-            if value == 0:
+            if value < threshold or value == 0:
                 row.append(f'{"":>{max_width}}')
-            elif isinstance(value, int):
-                row.append(f'{color_code}{value:>{max_width}}\033[0m')
-            else:
-                if value < threshold:
-                    value = 0
-                row.append(f'{color_code}{value:>{max_width}.4f}\033[0m')
+                continue
+            color_code = get_grayscale(value)
+            f_v = f'{value:>{max_width}}' if isinstance(value, int) else f'{value:>{max_width}.4f}'
+            f_v = f'{f_v}' if long_report else f'{color_code}{f_v}\033[0m'
+            row.append(f"{f_v}")
 
         # Print each row with rank labels
         print(f'{rank}  ' + '  '.join(row))
-    print("\n\n")
-
-## lists
-def dummy_list():
-    #TODO: make proper files from here
-    """
-    file_list = [
-    "poker_monte_carlo_1727515339.1416242.csv",
-    "poker_monte_carlo_1727517452.8591456.csv",
-    "poker_monte_carlo_1727517793.1466877.csv",
-    "poker_monte_carlo_1727518170.7944028.csv",
-    "poker_monte_carlo_1727518363.9386613.csv"
-    ]
-
-    file_list_9 = [
-    "poker_monte_carlo_9hands1727521142.7800896.csv"
-    ]
-
-    file_list_9_long = [
-    "poker_monte_carlo_30000000_9hands1727522804.684028.csv"
-    ]
-
-    file_list_3_long = [
-    "poker_monte_carlo_100000000_3hands_20240928_105040.csv"
-    ]"""
-    pass
-
+    print("\n")
 
 ## generators
-def raw_to_matriz_gen(file_list, n_players):
+def report_generator(i_file_list, n_players, output="", report=True):
+    """Take input parameters to make a report file with the required analisys."""
+    if report:
+        if output=="":
+            file_path = os.getenv("POKER_OUT_FILE_PATH", "") + "reports\\"
+        else:
+            file_path = output
+        time_format = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        file_name = f"{file_path}PKM_summary_{n_players}_{time_format}.txt"
+        print("final file_name:", file_name)
+        os.makedirs(file_path, exist_ok=True)
+        with open(file_name, "w", encoding="utf-8") as report_file:
+            previous_output = sys.stdout
+            sys.stdout = report_file
+            raw_to_matriz_gen(i_file_list, n_players, long_report=True)
+            sys.stdout = previous_output
+        return
+
+    raw_to_matriz_gen(i_file_list, n_players)
+    return
+
+
+
+def raw_to_matriz_gen(i_file_list, n_players, long_report=False):
+    """Function raw_to_matriz_gen. Based on an input file list and the number of players based
+        on the simulations create a report of the card wins and the pobability of winning."""
+    if long_report:
+        print("In raw_to_matriz_gen from data_science.py")
+        print(f"input: \n Files: {i_file_list}, \n number of Players: {n_players}")
+
     winner_counter = Counter()
-    for file_name in file_list:
+    for file_name in i_file_list:
         winner_counter += Counter(process_file(file_name))
         simulations_read = sum(item[1] for item in winner_counter.most_common(len(winner_counter)))
+    if long_report:
+        print("Wins counter per card combinations.")
+        print("Combination format: [card_a][card_b][combination_type].")
+        print("Combination types: P=Pairs ; S=Suits ; N=Non pairs or suits.")
+        print()
     print(winner_counter)
-    print(len(winner_counter), simulations_read)
+
+    if long_report:
+        print(f"Number of combinations: {len(winner_counter)}")
+        print(f"Number of simulations found: {simulations_read}")
+        print()
+        print()
 
     coincidence_matrix, probability_matrix = generate_matrices(winner_counter, n_players)
-    print_matrix(coincidence_matrix)
-    print_matrix(probability_matrix, 0.145)
-    print_matrix(probability_matrix, 0.11)
-    print_matrix(probability_matrix, 0.0)
 
+    if long_report:
+        print("Coincidence matrix:")
+        print("Pairs are in the diagonal, the top triangle contains suit combinations and")
+        print("the bottom triangle contains non-suit combinations.")
+    print_matrix(coincidence_matrix, 0, long_report)
+
+    if long_report:
+        print("Probability_matrix:")
+        print("Given the obtained pair this chart shows the probability of winning.")
+        print("The probability is a number from 0 to 1.")
+        print("A probability near to 1 will likely happen.")
+    print_matrix(probability_matrix, 0, long_report)
+
+    threshold=round(1/n_players, 2)
+    threshold_list = [ num*threshold for num in [1, 1.5, 2] ]
+    if long_report:
+        print(f"Thresholds: {threshold_list}")
+        print(f"A threshold of {threshold} is a fair probability, 1/num_players")
+    for threshold in threshold_list:
+        if long_report:
+            print(f"Threshold: {threshold}")
+        print_matrix(probability_matrix, threshold, long_report)
+    print()
 
 
 if __name__ == "__main__":
     #files created evaluating all the hand combinations
 
-    file_path = os.getenv("POKER_OUT_FILE_PATH", "")
-
     parser = argparse.ArgumentParser(
         description='Data Analysis App for Monte Carlo Poker simulations.')
     parser.add_argument('number_of_players')
     parser.add_argument('-f', '--file')
-    parser.add_argument('-i', '--ignore_default_path')
-    parser.add_argument('-o', '--output_file') #TODO
+    parser.add_argument('-o', '--output_path')
     parser.add_argument('-l', '--list_file')
     args = parser.parse_args()
 
-    print(args, args.number_of_players, args.file)
-    n_players = int(args.number_of_players)
-    
-    file_list = [args.file] if args.file is not None else []
-    
-    if args.list_file is not None:
-        with open(args.list_file, 'r', encoding="utf-8") as file:
-            for line in file:
-                file_list.append(line.strip())
+    print(args)
+    numner_players = int(args.number_of_players)
 
-    print(file_list)
-    raw_to_matriz_gen(file_list, n_players)
+    input_file_list = [args.file] if args.file is not None else []
+    if args.list_file is not None:
+        with open(args.list_file, 'r', encoding="utf-8") as input_list_file:
+            for line in input_list_file:
+                input_file_list.append(line.strip())
+
+    output_path = [args.output_path] if args.output_path is not None else ""
+
+    print(f"numner_players: {numner_players}, output_path: {output_path}")
+    print(f"input_file_list: {input_file_list}")
+    report_generator(input_file_list, numner_players, output_path)

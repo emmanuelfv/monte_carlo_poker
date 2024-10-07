@@ -34,12 +34,15 @@ Files with be generated as in the included file: "poker_monte_carlo_2_3hands_202
  - [ ] Implement a way to tract information of the game for further analisys based on all game activities. 
 
 ### Known issues:
+ - [ ]
 
+### Solved issues:
  - [x] format "data_science.py" acording to pylint
  - [x] In "data_science.py", probability is not declared properly
  - [x] In "data_science.py", the file  usage is not intuitibely. 
- - [ ] In "data_science.py", there is not a way to generate reports of the information. All the information is printed.
+ - [x] In "data_science.py", there is not a way to generate reports of the information. All the information is printed.
 
 ## Contributions 
 
 Please feel free to contribute on this project, there is a lot of investigation to do on this field.
+
