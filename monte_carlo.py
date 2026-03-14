@@ -409,4 +409,4 @@ def tc1_simple_hand_usage():
 
 if __name__ == "__main__":
     #full_test()
-    data_collection()
+    data_collection() 
